@@ -1,14 +1,13 @@
-import AVKit
+import Foundation
+import MediaPlayer
 
 private let defaultPlaybackRate: Double = 1.0
-
 private let defaultVolume: Double = 1.0
-
 private let defaultLooping: Bool = false
 
 typealias Completer = () -> Void
-
-typealias CompleterError = (Error?) -> Void
+typealias CompleterError = () -> Void
+typealias StateUpdateDelegate = (MPMusicPlayerController) -> Void
 
 class WrappedMediaPlayer {
   private(set) var eventHandler: AudioPlayersStreamHandler
@@ -16,80 +15,79 @@ class WrappedMediaPlayer {
   var looping: Bool
 
   private var reference: SwiftAudioplayersDarwinPlugin
-  private var player: AVPlayer
+  private var player: MPMusicPlayerController
   private var playbackRate: Double
   private var volume: Double
-  private var url: String?
+  private var id: UInt64?
 
-  private var completionObserver: TimeObserver?
-  private var playerItemStatusObservation: NSKeyValueObservation?
+    var stateUpdateDelegate: StateUpdateDelegate?
 
   init(
     reference: SwiftAudioplayersDarwinPlugin,
     eventHandler: AudioPlayersStreamHandler,
-    player: AVPlayer = AVPlayer.init(),
+    player: MPMusicPlayerController = MPMusicPlayerController.applicationMusicPlayer,
     playbackRate: Double = defaultPlaybackRate,
     volume: Double = defaultVolume,
     looping: Bool = defaultLooping,
-    url: String? = nil
+    url: UInt64? = nil
   ) {
     self.reference = reference
     self.eventHandler = eventHandler
     self.player = player
-    self.completionObserver = nil
-    self.playerItemStatusObservation = nil
 
     self.isPlaying = false
     self.playbackRate = playbackRate
     self.volume = volume
     self.looping = looping
-    self.url = url
+    self.id = url
+
+    self.startNotifications()
   }
 
   func setSourceUrl(
     url: String,
     isLocal: Bool,
-    mimeType: String? = nil,
     completer: Completer? = nil,
     completerError: CompleterError? = nil
   ) {
-    let playbackStatus = player.currentItem?.status
+      let persistentId = UInt64(url)
+      let playbackStatus = player.playbackState
 
-    if self.url != url || playbackStatus == .failed || playbackStatus == nil {
+      if self.id != persistentId || playbackStatus == .interrupted || playbackStatus == .stopped {
       reset()
-      self.url = url
+      self.id = persistentId
       do {
-        let playerItem = try createPlayerItem(url: url, isLocal: isLocal, mimeType: mimeType)
+        let playerItem = try createPlayerItem(persistentId!, isLocal)
         // Need to observe item status immediately after creating:
-        setUpPlayerItemStatusObservation(
-          playerItem,
-          completer: completer,
-          completerError: completerError)
+//        setUpPlayerItemStatusObservation(
+//          player,
+//          completer: completer,
+//          completerError: completerError)
         // Replacing the player item triggers completion in setUpPlayerItemStatusObservation
-        self.player.replaceCurrentItem(with: playerItem)
-        self.setUpSoundCompletedObserver(self.player, playerItem)
+        replaceItem(with: playerItem)
+//        self.setUpSoundCompletedObserver(self.player, playerItem)
       } catch {
-        completerError?(error)
+        completerError?()
       }
     } else {
-      if playbackStatus == .readyToPlay {
+        if player.isPreparedToPlay {
         completer?()
       }
     }
   }
 
   func getDuration() -> Int? {
-    guard let duration = getDurationCMTime() else {
+    guard let duration = getDurationTimeInterval() else {
       return nil
     }
-    return fromCMTime(time: duration)
+    return Int(duration)
   }
 
   func getCurrentPosition() -> Int? {
-    guard let time = getCurrentCMTime() else {
+    guard let time = getCurrentTimeInterval() else {
       return nil
     }
-    return fromCMTime(time: time)
+    return Int(time)
   }
 
   func pause() {
@@ -100,162 +98,130 @@ class WrappedMediaPlayer {
   func resume() {
     isPlaying = true
     configParameters(player: player)
-    if #available(iOS 10.0, macOS 10.12, *) {
-      player.playImmediately(atRate: Float(playbackRate))
-    } else {
       player.play()
-    }
     updateDuration()
   }
 
   func setVolume(volume: Double) {
     self.volume = volume
-    player.volume = Float(volume)
+      let volumeView = MPVolumeView()
+      let slider = volumeView.subviews.first(where: { $0 is UISlider }) as? UISlider;             DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.01) {
+    slider?.value = Float(volume)
+    }
   }
 
   func setPlaybackRate(playbackRate: Double) {
     self.playbackRate = playbackRate
     if isPlaying {
       // Setting the rate causes the player to resume playing. So setting it only, when already playing.
-      player.rate = Float(playbackRate)
+      player.currentPlaybackRate = Float(playbackRate)
     }
   }
 
-  func seek(time: CMTime, completer: Completer? = nil) {
-    guard let currentItem = player.currentItem else {
-      completer?()
-      return
-    }
-    currentItem.seek(to: time) {
-      finished in
-      if !self.isPlaying {
-        self.player.pause()
+  func seek(time: Float, completer: Completer? = nil) {
+      let currentTime = player.currentPlaybackTime
+      let seekTime = currentTime + TimeInterval(time)
+
+      if currentTime > TimeInterval(time) {
+          while currentTime != seekTime {
+              player.beginSeekingForward()
+          }
+          player.endSeeking()
+          completer?()
+          self.eventHandler.onSeekComplete()
+          return
+      } else {
+          while currentTime != seekTime {
+              player.beginSeekingBackward()
+          }
+          player.endSeeking()
+          completer?()
+          self.eventHandler.onSeekComplete()
+          return
       }
-      self.eventHandler.onSeekComplete()
-      if finished {
-        completer?()
-      }
-    }
   }
 
   func stop(completer: Completer? = nil) {
     pause()
-    seek(time: toCMTime(millis: 0), completer: completer)
+    seek(time: Float(0), completer: completer)
   }
 
   func release(completer: Completer? = nil) {
     stop {
       self.reset()
-      self.url = nil
+      self.id = nil
       completer?()
     }
   }
 
   func dispose(completer: Completer? = nil) {
+      player.endGeneratingPlaybackNotifications()
     release {
+        self.stopNotifications()
       completer?()
     }
   }
 
-  private func getDurationCMTime() -> CMTime? {
-    return player.currentItem?.asset.duration
+  private func getDurationTimeInterval() -> TimeInterval? {
+      return player.nowPlayingItem?.playbackDuration
   }
 
-  private func getCurrentCMTime() -> CMTime? {
-    return player.currentItem?.currentTime()
+  private func getCurrentTimeInterval() -> TimeInterval? {
+      return player.currentPlaybackTime
   }
 
-  private func createPlayerItem(
-    url: String,
-    isLocal: Bool,
-    mimeType: String? = nil
-  ) throws -> AVPlayerItem {
-    guard
-      let parsedUrl = isLocal
-        ? URL(fileURLWithPath: url.deletingPrefix("file://")) : URL(string: url)
-    else {
-      throw AudioPlayerError.error("Url not valid: \(url)")
-    }
-
-    let playerItem: AVPlayerItem
-
-    if let unwrappedMimeType = mimeType {
-      if #available(iOS 17, macOS 14.0, *) {
-        let asset = AVURLAsset(
-          url: parsedUrl, options: [AVURLAssetOverrideMIMETypeKey: unwrappedMimeType])
-        playerItem = AVPlayerItem(asset: asset)
+  private func createPlayerItem(_ id: UInt64, _ isLocal: Bool) throws -> MPMediaItem {
+      let songFilter = MPMediaPropertyPredicate(value: id, forProperty: MPMediaItemPropertyPersistentID, comparisonType: .equalTo)
+    let query = MPMediaQuery(filterPredicates: Set([songFilter]))
+      if let items = query.items, let song = items.first {
+          return song
       } else {
-        let asset = AVURLAsset(
-          url: parsedUrl, options: ["AVURLAssetOutOfBandMIMETypeKey": unwrappedMimeType])
-        playerItem = AVPlayerItem(asset: asset)
+          throw AudioPlayerError.error("ID not valid: \(id)")
       }
-    } else {
-      playerItem = AVPlayerItem(url: parsedUrl)
-    }
-
-    playerItem.audioTimePitchAlgorithm = AVAudioTimePitchAlgorithm.timeDomain
-    return playerItem
   }
 
-  private func setUpPlayerItemStatusObservation(
-    _ playerItem: AVPlayerItem,
-    completer: Completer? = nil,
-    completerError: CompleterError? = nil
-  ) {
-    playerItemStatusObservation = playerItem.observe(\AVPlayerItem.status) { (playerItem, change) in
-      let status = playerItem.status
-      self.eventHandler.onLog(message: "player status: \(status), change: \(change)")
+    public func startNotifications() {
+            player.beginGeneratingPlaybackNotifications()
+            NotificationCenter.default.addObserver(self,
+                selector: #selector(stateChanged),
+                name: .MPMusicPlayerControllerPlaybackStateDidChange,
+                object: player)
+            NotificationCenter.default.addObserver(self,
+                selector: #selector(stateChanged),
+                name: .MPMusicPlayerControllerNowPlayingItemDidChange,
+                object: player)
+        }
 
-      switch playerItem.status {
-      case .readyToPlay:
-        self.updateDuration()
-        completer?()
-      case .failed:
-        self.reset()
-        completerError?(nil)
-      default:
-        break
-      }
-    }
-  }
+    public func stopNotifications() {
+            player.endGeneratingPlaybackNotifications()
+            NotificationCenter.default.removeObserver(self,
+                name: .MPMusicPlayerControllerPlaybackStateDidChange,
+                object: player)
+            NotificationCenter.default.removeObserver(self,
+                name: .MPMusicPlayerControllerNowPlayingItemDidChange,
+                object: player)
+        }
 
-  private func setUpSoundCompletedObserver(_ player: AVPlayer, _ playerItem: AVPlayerItem) {
-    let observer = NotificationCenter.default.addObserver(
-      forName: NSNotification.Name.AVPlayerItemDidPlayToEndTime,
-      object: playerItem,
-      queue: nil
-    ) {
-      [weak self] (notification) in
-      self?.onSoundComplete()
-    }
-    self.completionObserver = TimeObserver(player: player, observer: observer)
-  }
-
-  private func configParameters(player: AVPlayer) {
+  private func configParameters(player: MPMusicPlayerController) {
     if isPlaying {
-      player.volume = Float(volume)
-      player.rate = Float(playbackRate)
+        self.setVolume(volume: volume)
+      player.currentPlaybackRate = Float(playbackRate)
     }
   }
 
   private func reset() {
-    playerItemStatusObservation?.invalidate()
-    playerItemStatusObservation = nil
-    if let cObserver = completionObserver {
-      NotificationCenter.default.removeObserver(cObserver.observer)
-      completionObserver = nil
-    }
-    player.replaceCurrentItem(with: nil)
+    stopNotifications()
+    replaceItem(with: nil)
   }
 
   private func updateDuration() {
-    guard let duration = player.currentItem?.asset.duration else {
-      return
-    }
-    if CMTimeGetSeconds(duration) > 0 {
-      let millis = fromCMTime(time: duration)
-      eventHandler.onDuration(millis: millis)
-    }
+      let current: Double = player.currentPlaybackTime
+      let durationTotal: Double = player.nowPlayingItem!.playbackDuration
+      let duration = current / durationTotal
+        if duration > 0 {
+            let millis = Int(duration) * 1000
+          eventHandler.onDuration(millis: millis)
+        }
   }
 
   private func onSoundComplete() {
@@ -263,7 +229,7 @@ class WrappedMediaPlayer {
       return
     }
 
-    seek(time: toCMTime(millis: 0)) {
+    seek(time: 0) {
       if self.looping {
         self.resume()
       } else {
@@ -274,4 +240,26 @@ class WrappedMediaPlayer {
     reference.controlAudioSession()
     eventHandler.onComplete()
   }
+
+  private func onTimeInterval(time: CMTime) {
+    let millis = fromCMTime(time: time)
+    eventHandler.onCurrentPosition(millis: millis)
+  }
+
+    private func replaceItem(with: MPMediaItem?) {
+        setQueue(song: with)
+    }
+
+    private func setQueue(song: MPMediaItem?) {
+        if song == nil {
+            player.stop()
+        } else {
+            let descriptor = MPMusicPlayerMediaItemQueueDescriptor(itemCollection: MPMediaItemCollection(items: [song!]))
+            player.setQueue(with: descriptor)
+        }
+    }
+
+    @objc private func stateChanged(notification: NSNotification) {
+            stateUpdateDelegate?(player)
+        }
 }
