@@ -54,21 +54,28 @@ class WrappedMediaPlayer {
       let playbackStatus = player.playbackState
 
       if self.id != persistentId || playbackStatus == .interrupted || playbackStatus == .stopped {
-      reset()
-      self.id = persistentId
-      do {
-        let playerItem = try createPlayerItem(persistentId!, isLocal)
-        // Need to observe item status immediately after creating:
-//        setUpPlayerItemStatusObservation(
-//          player,
-//          completer: completer,
-//          completerError: completerError)
-        // Replacing the player item triggers completion in setUpPlayerItemStatusObservation
-        replaceItem(with: playerItem)
-//        self.setUpSoundCompletedObserver(self.player, playerItem)
-      } catch {
-        completerError?()
-      }
+          reset()
+          self.id = persistentId
+          do {
+            let playerItem = try createPlayerItem(persistentId!, isLocal)
+
+            // Replacing the player item triggers completion in setUpPlayerItemStatusObservation
+            replaceItem(with: playerItem)
+              
+//            self.setUpSoundCompletedObserver(self.player, playerItem)
+              
+              player.prepareToPlay(completionHandler: { error in
+                  if error == nil {
+                      self.updateDuration()
+                      completer?()
+                  } else {
+                      self.reset()
+                      completerError?()
+                  }
+              })
+          } catch {
+            completerError?()
+          }
     } else {
         if player.isPreparedToPlay {
         completer?()
@@ -80,14 +87,14 @@ class WrappedMediaPlayer {
     guard let duration = getDurationTimeInterval() else {
       return nil
     }
-    return Int(duration)
+    return Int(duration) * 1000
   }
 
   func getCurrentPosition() -> Int? {
     guard let time = getCurrentTimeInterval() else {
       return nil
     }
-    return Int(time)
+    return Int(time) * 1000
   }
 
   func pause() {
@@ -119,26 +126,30 @@ class WrappedMediaPlayer {
   }
 
   func seek(time: Float, completer: Completer? = nil) {
-      let currentTime = player.currentPlaybackTime
-      let seekTime = currentTime + TimeInterval(time)
-
-      if currentTime > TimeInterval(time) {
-          while currentTime != seekTime {
-              player.beginSeekingForward()
-          }
-          player.endSeeking()
-          completer?()
-          self.eventHandler.onSeekComplete()
-          return
-      } else {
-          while currentTime != seekTime {
-              player.beginSeekingBackward()
-          }
-          player.endSeeking()
-          completer?()
-          self.eventHandler.onSeekComplete()
-          return
-      }
+      player.currentPlaybackTime = TimeInterval(time)
+      self.eventHandler.onSeekComplete()
+      completer?()
+      
+//      let currentTime = player.currentPlaybackTime
+//      let seekTime = currentTime + TimeInterval(time)
+//
+//      if currentTime > TimeInterval(time) {
+//          while currentTime != seekTime {
+//              player.beginSeekingForward()
+//          }
+//          player.endSeeking()
+//          completer?()
+//          self.eventHandler.onSeekComplete()
+//          return
+//      } else {
+//          while currentTime != seekTime {
+//              player.beginSeekingBackward()
+//          }
+//          player.endSeeking()
+//          completer?()
+//          self.eventHandler.onSeekComplete()
+//          return
+//      }
   }
 
   func stop(completer: Completer? = nil) {
@@ -214,15 +225,12 @@ class WrappedMediaPlayer {
     replaceItem(with: nil)
   }
 
-  private func updateDuration() {
-      let current: Double = player.currentPlaybackTime
-      let durationTotal: Double = player.nowPlayingItem!.playbackDuration
-      let duration = current / durationTotal
+    private func updateDuration() {
+        let duration = getDuration() ?? 0
         if duration > 0 {
-            let millis = Int(duration) * 1000
-          eventHandler.onDuration(millis: millis)
-        }
-  }
+            eventHandler.onDuration(millis: duration)
+          }
+    }
 
   private func onSoundComplete() {
     if !isPlaying {
