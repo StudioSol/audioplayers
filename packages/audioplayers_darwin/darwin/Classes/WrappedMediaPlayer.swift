@@ -241,11 +241,6 @@ class WrappedMediaPlayer {
     eventHandler.onComplete()
   }
 
-  private func onTimeInterval(time: CMTime) {
-    let millis = fromCMTime(time: time)
-    eventHandler.onCurrentPosition(millis: millis)
-  }
-
     private func replaceItem(with: MPMediaItem?) {
         setQueue(song: with)
     }
@@ -260,6 +255,6 @@ class WrappedMediaPlayer {
     }
 
     @objc private func stateChanged(notification: NSNotification) {
-            stateUpdateDelegate?(player)
-        }
+        stateUpdateDelegate?(player)
+    }
 }

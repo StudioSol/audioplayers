@@ -22,8 +22,7 @@ flutter:
 
 dependencies:
   audioplayers_android: ^5.0.0
-  audioplayers_darwin:
-    path: ../audioplayers_darwin
+  audioplayers_darwin: ^6.0.0
   audioplayers_linux: ^4.0.0
   audioplayers_platform_interface: ^7.0.0
   audioplayers_web: ^5.0.0
