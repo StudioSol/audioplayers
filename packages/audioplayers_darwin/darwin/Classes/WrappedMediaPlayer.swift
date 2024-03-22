@@ -53,7 +53,7 @@ class WrappedMediaPlayer {
       let persistentId = UInt64(url)
       let playbackStatus = player.playbackState
 
-      if self.id != persistentId || playbackStatus == .interrupted || playbackStatus == .stopped {
+      if self.id != persistentId || persistentId != nil || playbackStatus == .interrupted || playbackStatus == .stopped {
           reset()
           self.id = persistentId
           do {
@@ -61,9 +61,7 @@ class WrappedMediaPlayer {
 
             // Replacing the player item triggers completion in setUpPlayerItemStatusObservation
             replaceItem(with: playerItem)
-              
-//            self.setUpSoundCompletedObserver(self.player, playerItem)
-              
+
               player.prepareToPlay(completionHandler: { error in
                   if error == nil {
                       self.updateDuration()
@@ -104,18 +102,13 @@ class WrappedMediaPlayer {
 
   func resume() {
     isPlaying = true
-    configParameters(player: player)
       player.play()
     updateDuration()
   }
 
-  func setVolume(volume: Double) {
-    self.volume = volume
-      let volumeView = MPVolumeView()
-      let slider = volumeView.subviews.first(where: { $0 is UISlider }) as? UISlider;             DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.01) {
-    slider?.value = Float(volume)
+    func setVolume(volume: Double) {
+        self.volume = volume
     }
-  }
 
   func setPlaybackRate(playbackRate: Double) {
     self.playbackRate = playbackRate
@@ -129,27 +122,6 @@ class WrappedMediaPlayer {
       player.currentPlaybackTime = TimeInterval(time)
       self.eventHandler.onSeekComplete()
       completer?()
-      
-//      let currentTime = player.currentPlaybackTime
-//      let seekTime = currentTime + TimeInterval(time)
-//
-//      if currentTime > TimeInterval(time) {
-//          while currentTime != seekTime {
-//              player.beginSeekingForward()
-//          }
-//          player.endSeeking()
-//          completer?()
-//          self.eventHandler.onSeekComplete()
-//          return
-//      } else {
-//          while currentTime != seekTime {
-//              player.beginSeekingBackward()
-//          }
-//          player.endSeeking()
-//          completer?()
-//          self.eventHandler.onSeekComplete()
-//          return
-//      }
   }
 
   func stop(completer: Completer? = nil) {
@@ -215,7 +187,7 @@ class WrappedMediaPlayer {
 
   private func configParameters(player: MPMusicPlayerController) {
     if isPlaying {
-        self.setVolume(volume: volume)
+//        self.setVolume(volume: volume)
       player.currentPlaybackRate = Float(playbackRate)
     }
   }
