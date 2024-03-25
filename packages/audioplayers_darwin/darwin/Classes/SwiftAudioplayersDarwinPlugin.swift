@@ -205,7 +205,6 @@ public class SwiftAudioplayersDarwinPlugin: NSObject, FlutterPlugin {
             code: "DarwinAudioError", message: "Null position received on seek", details: nil))
         return
       }
-      // let time = toCMTime(millis: position)
         player.seek(time: Float(position)) {
         result(1)
       }

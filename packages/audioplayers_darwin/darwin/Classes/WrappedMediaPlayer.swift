@@ -112,14 +112,10 @@ class WrappedMediaPlayer {
 
   func setPlaybackRate(playbackRate: Double) {
     self.playbackRate = playbackRate
-    if isPlaying {
-      // Setting the rate causes the player to resume playing. So setting it only, when already playing.
-      player.currentPlaybackRate = Float(playbackRate)
-    }
   }
 
   func seek(time: Float, completer: Completer? = nil) {
-      player.currentPlaybackTime = TimeInterval(time)
+      player.currentPlaybackTime = TimeInterval(time/1000)
       self.eventHandler.onSeekComplete()
       completer?()
   }
@@ -184,13 +180,6 @@ class WrappedMediaPlayer {
                 name: .MPMusicPlayerControllerNowPlayingItemDidChange,
                 object: player)
         }
-
-  private func configParameters(player: MPMusicPlayerController) {
-    if isPlaying {
-//        self.setVolume(volume: volume)
-      player.currentPlaybackRate = Float(playbackRate)
-    }
-  }
 
   private func reset() {
     stopNotifications()
