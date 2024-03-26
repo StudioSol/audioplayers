@@ -205,8 +205,7 @@ public class SwiftAudioplayersDarwinPlugin: NSObject, FlutterPlugin {
             code: "DarwinAudioError", message: "Null position received on seek", details: nil))
         return
       }
-      let time = toCMTime(millis: position)
-      player.seek(time: time) {
+        player.seek(time: Float(position)) {
         result(1)
       }
       return
@@ -223,18 +222,17 @@ public class SwiftAudioplayersDarwinPlugin: NSObject, FlutterPlugin {
       }
 
       player.setSourceUrl(
-        url: url!, isLocal: isLocal,
-        mimeType: mimeType,
+        url: url!, 
+        isLocal: isLocal,
         completer: {
           player.eventHandler.onPrepared(isPrepared: true)
         },
-        completerError: { error in
-          let errorStr: String = error != nil ? "\(error!)" : "Unknown error"
+        completerError: {
           player.eventHandler.onError(
             code: "DarwinAudioError",
             message: "Failed to set source. For troubleshooting, see "
               + "https://github.com/bluefireteam/audioplayers/blob/main/troubleshooting.md",
-            details: "AVPlayerItem.Status.failed on setSourceUrl: \(errorStr)")
+            details: "AVPlayerItem.Status.failed on setSourceUrl")
         })
       result(1)
       return
