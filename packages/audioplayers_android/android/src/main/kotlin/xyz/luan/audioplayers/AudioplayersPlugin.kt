@@ -103,7 +103,14 @@ class AudioplayersPlugin : FlutterPlugin {
                 "setSourceUrl" -> {
                     val url = call.argument<String>("url") ?: error("url is required")
                     if (url.contains("content://")) {
-                        player.source = ContentSource(url, context)
+                        try {
+                            player.source = ContentSource(url, context)
+                        } catch (e: Exception) {
+                            response.error(
+                                "AndroidAudioError",
+                                "Failed to set source", e)
+                            return
+                        }
                     } else {
                         val isLocal = call.argument<Boolean>("isLocal") ?: false
                         try {
