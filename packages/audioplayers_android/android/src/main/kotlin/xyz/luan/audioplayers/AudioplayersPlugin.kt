@@ -1,5 +1,4 @@
 package xyz.luan.audioplayers
-
 import android.content.Context
 import android.media.AudioManager
 import android.os.Build
@@ -12,6 +11,7 @@ import io.flutter.plugin.common.MethodChannel
 import xyz.luan.audioplayers.player.SoundPoolManager
 import xyz.luan.audioplayers.player.WrappedPlayer
 import xyz.luan.audioplayers.source.BytesSource
+import xyz.luan.audioplayers.source.ContentSource
 import xyz.luan.audioplayers.source.UrlSource
 import java.io.FileNotFoundException
 import java.util.concurrent.ConcurrentHashMap
@@ -102,17 +102,28 @@ class AudioplayersPlugin : FlutterPlugin {
             when (call.method) {
                 "setSourceUrl" -> {
                     val url = call.argument<String>("url") ?: error("url is required")
-                    val isLocal = call.argument<Boolean>("isLocal") ?: false
-                    try {
-                        player.source = UrlSource(url, isLocal)
-                    } catch (e: FileNotFoundException) {
-                        response.error(
-                            "AndroidAudioError",
-                            "Failed to set source. For troubleshooting, see: " +
-                                "https://github.com/bluefireteam/audioplayers/blob/main/troubleshooting.md",
-                            e,
-                        )
-                        return
+                    if (url.contains("content://")) {
+                        try {
+                            player.source = ContentSource(url, context)
+                        } catch (e: Exception) {
+                            response.error(
+                                "AndroidAudioError",
+                                "Failed to set source", e)
+                            return
+                        }
+                    } else {
+                        val isLocal = call.argument<Boolean>("isLocal") ?: false
+                        try {
+                            player.source = UrlSource(url, isLocal)
+                        } catch (e: FileNotFoundException) {
+                            response.error(
+                                "AndroidAudioError",
+                                "Failed to set source. For troubleshooting, see: " +
+                                    "https://github.com/bluefireteam/audioplayers/blob/main/troubleshooting.md",
+                                e,
+                            )
+                            return
+                        }
                     }
                 }
 
