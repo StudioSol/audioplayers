@@ -54,7 +54,6 @@ class WrappedMediaPlayer {
       let playbackStatus = player.playbackState
 
       if self.id != persistentId || persistentId != nil || playbackStatus == .interrupted || playbackStatus == .stopped {
-          reset()
           self.id = persistentId
           do {
             let playerItem = try createPlayerItem(persistentId!, isLocal)
@@ -127,16 +126,14 @@ class WrappedMediaPlayer {
 
   func release(completer: Completer? = nil) {
     stop {
-      self.reset()
       self.id = nil
       completer?()
     }
   }
 
   func dispose(completer: Completer? = nil) {
-      player.endGeneratingPlaybackNotifications()
     release {
-        self.stopNotifications()
+      self.stopNotifications()
       completer?()
     }
   }
@@ -166,7 +163,7 @@ class WrappedMediaPlayer {
                 name: .MPMusicPlayerControllerPlaybackStateDidChange,
                 object: player)
             NotificationCenter.default.addObserver(self,
-                selector: #selector(stateChanged),
+                selector: #selector(playItemChanged),
                 name: .MPMusicPlayerControllerNowPlayingItemDidChange,
                 object: player)
         }
@@ -224,6 +221,15 @@ class WrappedMediaPlayer {
     }
 
     @objc private func stateChanged(notification: NSNotification) {
+        let player = notification.object as! MPMusicPlayerController
         stateUpdateDelegate?(player)
+    }
+    
+    @objc private func playItemChanged(notification: NSNotification) {
+        let player = notification.object as! MPMusicPlayerController
+        
+        if (player.playbackState == MPMusicPlaybackState.paused) {
+            onSoundComplete()
+        }
     }
 }
