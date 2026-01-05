@@ -111,6 +111,7 @@ class WrappedMediaPlayer {
 
   func setPlaybackRate(playbackRate: Double) {
     self.playbackRate = playbackRate
+      self.player.currentPlaybackRate = Float(playbackRate)
   }
 
   func seek(time: Float, completer: Completer? = nil) {
