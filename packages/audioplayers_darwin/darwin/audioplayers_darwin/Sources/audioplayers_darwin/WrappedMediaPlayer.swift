@@ -14,7 +14,7 @@ class WrappedMediaPlayer {
   private(set) var isPlaying: Bool
   var looping: Bool
 
-  private var reference: SwiftAudioplayersDarwinPlugin
+  private var reference: AudioplayersDarwinPlugin
   private var player: MPMusicPlayerController
   private var playbackRate: Double
   private var volume: Double
@@ -23,7 +23,7 @@ class WrappedMediaPlayer {
     var stateUpdateDelegate: StateUpdateDelegate?
 
   init(
-    reference: SwiftAudioplayersDarwinPlugin,
+    reference: AudioplayersDarwinPlugin,
     eventHandler: AudioPlayersStreamHandler,
     player: MPMusicPlayerController = MPMusicPlayerController.applicationMusicPlayer,
     playbackRate: Double = defaultPlaybackRate,

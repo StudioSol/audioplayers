@@ -14,7 +14,7 @@ let channelName = "xyz.luan/audioplayers"
 
 let globalChannelName = "xyz.luan/audioplayers.global"
 
-public class SwiftAudioplayersDarwinPlugin: NSObject, FlutterPlugin {
+public class AudioplayersDarwinPlugin: NSObject, FlutterPlugin {
   var registrar: FlutterPluginRegistrar
   var binaryMessenger: FlutterBinaryMessenger
   var methods: FlutterMethodChannel
@@ -64,7 +64,7 @@ public class SwiftAudioplayersDarwinPlugin: NSObject, FlutterPlugin {
     let globalEvents = FlutterEventChannel(
       name: globalChannelName + "/events", binaryMessenger: binaryMessenger)
 
-    let instance = SwiftAudioplayersDarwinPlugin(
+    let instance = AudioplayersDarwinPlugin(
       registrar: registrar,
       binaryMessenger: binaryMessenger,
       methodChannel: methods,
