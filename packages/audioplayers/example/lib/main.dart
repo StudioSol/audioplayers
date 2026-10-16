@@ -50,13 +50,11 @@ class _ExampleAppState extends State<_ExampleApp> {
                   'Player stopped!',
                   textKey: Key('toast-player-stopped-$index'),
                 );
-                break;
               case PlayerState.completed:
                 toast(
                   'Player complete!',
                   textKey: Key('toast-player-complete-$index'),
                 );
-                break;
               default:
                 break;
             }
@@ -86,7 +84,6 @@ class _ExampleAppState extends State<_ExampleApp> {
         setState(() {
           audioPlayers.add(AudioPlayer()..setReleaseMode(ReleaseMode.stop));
         });
-        break;
       case PopupAction.remove:
         setState(() {
           if (audioPlayers.isNotEmpty) {
@@ -100,7 +97,6 @@ class _ExampleAppState extends State<_ExampleApp> {
             selectedPlayerIdx = audioPlayers.length - 1;
           }
         });
-        break;
     }
   }
 
