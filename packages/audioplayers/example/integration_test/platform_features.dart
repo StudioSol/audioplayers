@@ -1,11 +1,12 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+import 'package:pubspec_parse/pubspec_parse.dart';
 
 /// Specify supported features for a platform.
 class PlatformFeatures {
-  static const webPlatformFeatures = PlatformFeatures(
+  static const _webPlatformFeatures = PlatformFeatures(
     hasPlaylistSourceType: false,
     hasLowLatency: false,
-    hasReleaseModeRelease: false,
     hasForceSpeaker: false,
     hasDuckAudio: false,
     hasRespectSilence: false,
@@ -15,25 +16,39 @@ class PlatformFeatures {
     hasErrorEvent: false,
   );
 
-  static const androidPlatformFeatures = PlatformFeatures(
-    hasRecordingActive: false,
-  );
+  static bool? _usesAndroidMediaPlayer;
 
-  static const iosPlatformFeatures = PlatformFeatures(
+  static Future<bool> usesAndroidMediaPlayerImpl() async {
+    if (_usesAndroidMediaPlayer == null) {
+      final yamlContent = await rootBundle.loadString('pubspec.yaml');
+      final parsed = Pubspec.parse(yamlContent);
+      // This line should check for 'audioplayers_android' as soon as
+      // 'audioplayers_android_exo' becomes the default implementation.
+      _usesAndroidMediaPlayer =
+          !parsed.dependencies.containsKey('audioplayers_android_exo');
+    }
+    return _usesAndroidMediaPlayer!;
+  }
+
+  static Future<PlatformFeatures> _getAndroidPlatformFeatures() async =>
+      PlatformFeatures(
+        hasRecordingActive: false,
+        hasLowLatency: await usesAndroidMediaPlayerImpl(),
+      );
+
+  static const _iosPlatformFeatures = PlatformFeatures(
     hasDataUriSource: false,
     hasBytesSource: false,
     hasPlaylistSourceType: false,
-    hasReleaseModeRelease: false,
     hasLowLatency: false,
     hasBalance: false,
   );
 
-  static const macPlatformFeatures = PlatformFeatures(
+  static const _macPlatformFeatures = PlatformFeatures(
     hasDataUriSource: false,
     hasBytesSource: false,
     hasPlaylistSourceType: false,
     hasLowLatency: false,
-    hasReleaseModeRelease: false,
     hasForceSpeaker: false,
     hasDuckAudio: false,
     hasRespectSilence: false,
@@ -43,11 +58,10 @@ class PlatformFeatures {
     hasBalance: false,
   );
 
-  static const linuxPlatformFeatures = PlatformFeatures(
+  static const _linuxPlatformFeatures = PlatformFeatures(
     hasDataUriSource: false,
     hasBytesSource: false,
     hasLowLatency: false,
-    hasReleaseModeRelease: false,
     // MP3 duration is estimated: https://bugzilla.gnome.org/show_bug.cgi?id=726144
     // Use GstDiscoverer to get duration before playing: https://gstreamer.freedesktop.org/documentation/pbutils/gstdiscoverer.html?gi-language=c
     hasMp3Duration: false,
@@ -59,11 +73,10 @@ class PlatformFeatures {
     hasPlayingRoute: false,
   );
 
-  static const windowsPlatformFeatures = PlatformFeatures(
+  static const _windowsPlatformFeatures = PlatformFeatures(
     hasDataUriSource: false,
     hasPlaylistSourceType: false,
     hasLowLatency: false,
-    hasReleaseModeRelease: false,
     hasForceSpeaker: false,
     hasDuckAudio: false,
     hasRespectSilence: false,
@@ -124,19 +137,27 @@ class PlatformFeatures {
     this.hasErrorEvent = true,
   });
 
+  static PlatformFeatures? _instance;
+
+  static Future<void> ensureInitialized() async {
+    _instance ??= kIsWeb
+        ? _webPlatformFeatures
+        : switch (defaultTargetPlatform) {
+            TargetPlatform.android => await _getAndroidPlatformFeatures(),
+            TargetPlatform.iOS => _iosPlatformFeatures,
+            TargetPlatform.macOS => _macPlatformFeatures,
+            TargetPlatform.linux => _linuxPlatformFeatures,
+            TargetPlatform.windows => _windowsPlatformFeatures,
+            _ => const PlatformFeatures(),
+          };
+  }
+
   factory PlatformFeatures.instance() {
-    return kIsWeb
-        ? webPlatformFeatures
-        : defaultTargetPlatform == TargetPlatform.android
-            ? androidPlatformFeatures
-            : defaultTargetPlatform == TargetPlatform.iOS
-                ? iosPlatformFeatures
-                : defaultTargetPlatform == TargetPlatform.macOS
-                    ? macPlatformFeatures
-                    : defaultTargetPlatform == TargetPlatform.linux
-                        ? linuxPlatformFeatures
-                        : defaultTargetPlatform == TargetPlatform.windows
-                            ? windowsPlatformFeatures
-                            : const PlatformFeatures();
+    if (_instance == null) {
+      throw Exception(
+          'Make sure you call "PlatformFeatures.ensureInitialized()" before '
+          'accessing the instance.');
+    }
+    return _instance!;
   }
 }

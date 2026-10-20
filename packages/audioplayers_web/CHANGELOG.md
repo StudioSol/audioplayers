@@ -1,3 +1,29 @@
+## 5.3.0
+
+ - **FEAT**(android): Compatibility with Built-In Kotlin ([#1991](https://github.com/bluefireteam/audioplayers/issues/1991)). ([687218b9](https://github.com/bluefireteam/audioplayers/commit/687218b96682a7bcadd9490572db692dbc9a2f07))
+
+## 5.2.1
+
+ - **FIX**(web): Use GainNode for volume control to fix Safari compatibility ([#1978](https://github.com/bluefireteam/audioplayers/issues/1978)). ([a3d7e3f8](https://github.com/bluefireteam/audioplayers/commit/a3d7e3f8ab1d2bdab854a9650b6d77207e4324dc))
+
+## 5.2.0
+
+ - **FIX**(web): Reset pausedAt on release ([#1972](https://github.com/bluefireteam/audioplayers/issues/1972)) ([#1973](https://github.com/bluefireteam/audioplayers/issues/1973)). ([09b6bb66](https://github.com/bluefireteam/audioplayers/commit/09b6bb667e250690d0c9ad5db52d2d543ccecf48))
+ - **FIX**: Web safari audio context reuse ([#1972](https://github.com/bluefireteam/audioplayers/issues/1972)). ([bd698bb0](https://github.com/bluefireteam/audioplayers/commit/bd698bb0e985d11bdfe142c9036b7ba387357a8c))
+ - **FEAT**: Async swift code, align release functionality, align Android initialization error ([#1964](https://github.com/bluefireteam/audioplayers/issues/1964)). ([65c8f373](https://github.com/bluefireteam/audioplayers/commit/65c8f37314e7e023814bb77c9474c8a076f288cb))
+
+## 5.1.1
+
+ - **FIX**: Migrate to Melos v7 and Pub Workspaces ([#1929](https://github.com/bluefireteam/audioplayers/issues/1929)). ([9d0bfe0b](https://github.com/bluefireteam/audioplayers/commit/9d0bfe0be5cba0ce4fb3a75912b41117a8996bfe))
+
+## 5.1.0
+
+ - **FEAT**: Dispose players on Hot restart (closes [#1120](https://github.com/bluefireteam/audioplayers/issues/1120)) ([#1905](https://github.com/bluefireteam/audioplayers/issues/1905)). ([92bcb19e](https://github.com/bluefireteam/audioplayers/commit/92bcb19e10c462cb749e1209c5e066efc5581728))
+
+## 5.0.2
+
+ - **DOCS**: Fix status badge ([#1899](https://github.com/bluefireteam/audioplayers/issues/1899)). ([a0c6c4fa](https://github.com/bluefireteam/audioplayers/commit/a0c6c4fabff19e943dced1070c1be3541668dce9))
+
 ## 5.0.1
 
  - **DEPS**: Consider web:1.0.0 ([#1828](https://github.com/bluefireteam/audioplayers/pull/1828)). ([9d25e78d](https://github.com/bluefireteam/audioplayers/commit/9d25e78d24a687c90ffa76f034c418d2bbe45251))
