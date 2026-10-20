@@ -202,8 +202,12 @@ jobs:
       - name: Download Android emulator image
         run: |
           export ANDROID_TOOLS="$ANDROID_HOME/cmdline-tools/latest/bin"
-          echo "y" | $ANDROID_TOOLS/sdkmanager --install "system-images;android-30;aosp_atd;x86"
-          echo "no" | $ANDROID_TOOLS/avdmanager create avd --force --name emu --device "Nexus 5X" -k 'system-images;android-30;aosp_atd;x86'
+          # Pins the AVD directory, otherwise avdmanager creates the AVD where the emulator does not look for it.
+          export ANDROID_AVD_HOME="$HOME/.android/avd"
+          echo "ANDROID_AVD_HOME=$ANDROID_AVD_HOME" >> $GITHUB_ENV
+          mkdir -p $ANDROID_AVD_HOME
+          echo "y" | $ANDROID_TOOLS/sdkmanager --install "system-images;android-30;aosp_atd;x86_64"
+          echo "no" | $ANDROID_TOOLS/avdmanager create avd --force --name emu --device "Nexus 5X" -k 'system-images;android-30;aosp_atd;x86_64'
           $ANDROID_HOME/emulator/emulator -list-avds
       - name: Start Android emulator
         timeout-minutes: 10
@@ -335,8 +339,6 @@ jobs:
           flutter-version: ${{ inputs.flutter_version }}
           channel: ${{ inputs.flutter_channel }}
       - uses: bluefireteam/melos-action@v3
-      - name: Start audio server
-        run: net start audiosrv
       - name: Download virtual audio device
         # Download has to be done before setting the system date time.
         timeout-minutes: 1
