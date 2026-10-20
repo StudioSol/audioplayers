@@ -76,7 +76,8 @@ import MediaPlayer
       }
     }
 
-    private static func parseCategoryOption(option: String) throws -> AVAudioSession.CategoryOptions?
+    private static func parseCategoryOption(option: String) throws -> AVAudioSession
+      .CategoryOptions?
     {
       switch option {
       case "mixWithOthers":
@@ -100,7 +101,8 @@ import MediaPlayer
         if #available(iOS 10.0, *) {
           return .allowAirPlay
         } else {
-          throw AudioPlayerError.warning("Category Option allowAirPlay is only available on iOS 10+")
+          throw AudioPlayerError.warning(
+            "Category Option allowAirPlay is only available on iOS 10+")
         }
       case "overrideMutedMicrophoneInterruption":
         if #available(iOS 14.5, *) {

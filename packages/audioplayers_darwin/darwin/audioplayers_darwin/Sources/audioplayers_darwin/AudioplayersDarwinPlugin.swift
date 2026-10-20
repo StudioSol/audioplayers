@@ -205,7 +205,7 @@ public class AudioplayersDarwinPlugin: NSObject, FlutterPlugin {
             code: "DarwinAudioError", message: "Null position received on seek", details: nil))
         return
       }
-        player.seek(time: Float(position)) {
+      player.seek(time: Float(position)) {
         result(1)
       }
       return
@@ -222,7 +222,7 @@ public class AudioplayersDarwinPlugin: NSObject, FlutterPlugin {
       }
 
       player.setSourceUrl(
-        url: url!, 
+        url: url!,
         isLocal: isLocal,
         completer: {
           player.eventHandler.onPrepared(isPrepared: true)

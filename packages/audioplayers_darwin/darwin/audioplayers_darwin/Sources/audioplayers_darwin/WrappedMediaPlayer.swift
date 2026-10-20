@@ -20,7 +20,7 @@ class WrappedMediaPlayer {
   private var volume: Double
   private var id: UInt64?
 
-    var stateUpdateDelegate: StateUpdateDelegate?
+  var stateUpdateDelegate: StateUpdateDelegate?
 
   init(
     reference: AudioplayersDarwinPlugin,
@@ -50,31 +50,33 @@ class WrappedMediaPlayer {
     completer: Completer? = nil,
     completerError: CompleterError? = nil
   ) {
-      let persistentId = UInt64(url)
-      let playbackStatus = player.playbackState
+    let persistentId = UInt64(url)
+    let playbackStatus = player.playbackState
 
-      if self.id != persistentId || persistentId != nil || playbackStatus == .interrupted || playbackStatus == .stopped {
-          self.id = persistentId
-          do {
-            let playerItem = try createPlayerItem(persistentId!, isLocal)
+    if self.id != persistentId || persistentId != nil || playbackStatus == .interrupted
+      || playbackStatus == .stopped
+    {
+      self.id = persistentId
+      do {
+        let playerItem = try createPlayerItem(persistentId!, isLocal)
 
-            // Replacing the player item triggers completion in setUpPlayerItemStatusObservation
-            replaceItem(with: playerItem)
+        // Replacing the player item triggers completion in setUpPlayerItemStatusObservation
+        replaceItem(with: playerItem)
 
-              player.prepareToPlay(completionHandler: { error in
-                  if error == nil {
-                      self.updateDuration()
-                      completer?()
-                  } else {
-                      self.reset()
-                      completerError?()
-                  }
-              })
-          } catch {
+        player.prepareToPlay(completionHandler: { error in
+          if error == nil {
+            self.updateDuration()
+            completer?()
+          } else {
+            self.reset()
             completerError?()
           }
+        })
+      } catch {
+        completerError?()
+      }
     } else {
-        if player.isPreparedToPlay {
+      if player.isPreparedToPlay {
         completer?()
       }
     }
@@ -101,23 +103,23 @@ class WrappedMediaPlayer {
 
   func resume() {
     isPlaying = true
-      player.play()
+    player.play()
     updateDuration()
   }
 
-    func setVolume(volume: Double) {
-        self.volume = volume
-    }
+  func setVolume(volume: Double) {
+    self.volume = volume
+  }
 
   func setPlaybackRate(playbackRate: Double) {
     self.playbackRate = playbackRate
-      self.player.currentPlaybackRate = Float(playbackRate)
+    self.player.currentPlaybackRate = Float(playbackRate)
   }
 
   func seek(time: Float, completer: Completer? = nil) {
-      player.currentPlaybackTime = TimeInterval(time/1000)
-      self.eventHandler.onSeekComplete()
-      completer?()
+    player.currentPlaybackTime = TimeInterval(time / 1000)
+    self.eventHandler.onSeekComplete()
+    completer?()
   }
 
   func stop(completer: Completer? = nil) {
@@ -140,56 +142,61 @@ class WrappedMediaPlayer {
   }
 
   private func getDurationTimeInterval() -> TimeInterval? {
-      return player.nowPlayingItem?.playbackDuration
+    return player.nowPlayingItem?.playbackDuration
   }
 
   private func getCurrentTimeInterval() -> TimeInterval? {
-      return player.currentPlaybackTime
+    return player.currentPlaybackTime
   }
 
   private func createPlayerItem(_ id: UInt64, _ isLocal: Bool) throws -> MPMediaItem {
-      let songFilter = MPMediaPropertyPredicate(value: id, forProperty: MPMediaItemPropertyPersistentID, comparisonType: .equalTo)
+    let songFilter = MPMediaPropertyPredicate(
+      value: id, forProperty: MPMediaItemPropertyPersistentID, comparisonType: .equalTo)
     let query = MPMediaQuery(filterPredicates: Set([songFilter]))
-      if let items = query.items, let song = items.first {
-          return song
-      } else {
-          throw AudioPlayerError.error("ID not valid: \(id)")
-      }
+    if let items = query.items, let song = items.first {
+      return song
+    } else {
+      throw AudioPlayerError.error("ID not valid: \(id)")
+    }
   }
 
-    public func startNotifications() {
-            player.beginGeneratingPlaybackNotifications()
-            NotificationCenter.default.addObserver(self,
-                selector: #selector(stateChanged),
-                name: .MPMusicPlayerControllerPlaybackStateDidChange,
-                object: player)
-            NotificationCenter.default.addObserver(self,
-                selector: #selector(playItemChanged),
-                name: .MPMusicPlayerControllerNowPlayingItemDidChange,
-                object: player)
-        }
+  public func startNotifications() {
+    player.beginGeneratingPlaybackNotifications()
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(stateChanged),
+      name: .MPMusicPlayerControllerPlaybackStateDidChange,
+      object: player)
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(playItemChanged),
+      name: .MPMusicPlayerControllerNowPlayingItemDidChange,
+      object: player)
+  }
 
-    public func stopNotifications() {
-            player.endGeneratingPlaybackNotifications()
-            NotificationCenter.default.removeObserver(self,
-                name: .MPMusicPlayerControllerPlaybackStateDidChange,
-                object: player)
-            NotificationCenter.default.removeObserver(self,
-                name: .MPMusicPlayerControllerNowPlayingItemDidChange,
-                object: player)
-        }
+  public func stopNotifications() {
+    player.endGeneratingPlaybackNotifications()
+    NotificationCenter.default.removeObserver(
+      self,
+      name: .MPMusicPlayerControllerPlaybackStateDidChange,
+      object: player)
+    NotificationCenter.default.removeObserver(
+      self,
+      name: .MPMusicPlayerControllerNowPlayingItemDidChange,
+      object: player)
+  }
 
   private func reset() {
     stopNotifications()
     replaceItem(with: nil)
   }
 
-    private func updateDuration() {
-        let duration = getDuration() ?? 0
-        if duration > 0 {
-            eventHandler.onDuration(millis: duration)
-          }
+  private func updateDuration() {
+    let duration = getDuration() ?? 0
+    if duration > 0 {
+      eventHandler.onDuration(millis: duration)
     }
+  }
 
   private func onSoundComplete() {
     if !isPlaying {
@@ -208,29 +215,30 @@ class WrappedMediaPlayer {
     eventHandler.onComplete()
   }
 
-    private func replaceItem(with: MPMediaItem?) {
-        setQueue(song: with)
-    }
+  private func replaceItem(with: MPMediaItem?) {
+    setQueue(song: with)
+  }
 
-    private func setQueue(song: MPMediaItem?) {
-        if song == nil {
-            player.stop()
-        } else {
-            let descriptor = MPMusicPlayerMediaItemQueueDescriptor(itemCollection: MPMediaItemCollection(items: [song!]))
-            player.setQueue(with: descriptor)
-        }
+  private func setQueue(song: MPMediaItem?) {
+    if song == nil {
+      player.stop()
+    } else {
+      let descriptor = MPMusicPlayerMediaItemQueueDescriptor(
+        itemCollection: MPMediaItemCollection(items: [song!]))
+      player.setQueue(with: descriptor)
     }
+  }
 
-    @objc private func stateChanged(notification: NSNotification) {
-        let player = notification.object as! MPMusicPlayerController
-        stateUpdateDelegate?(player)
+  @objc private func stateChanged(notification: NSNotification) {
+    let player = notification.object as! MPMusicPlayerController
+    stateUpdateDelegate?(player)
+  }
+
+  @objc private func playItemChanged(notification: NSNotification) {
+    let player = notification.object as! MPMusicPlayerController
+
+    if player.playbackState == MPMusicPlaybackState.paused {
+      onSoundComplete()
     }
-    
-    @objc private func playItemChanged(notification: NSNotification) {
-        let player = notification.object as! MPMusicPlayerController
-        
-        if (player.playbackState == MPMusicPlaybackState.paused) {
-            onSoundComplete()
-        }
-    }
+  }
 }
