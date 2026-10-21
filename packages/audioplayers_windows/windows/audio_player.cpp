@@ -116,7 +116,7 @@ void AudioPlayer::SetSourceBytes(std::vector<uint8_t> bytes) {
     m_mediaEngineWrapper->SetMediaSource(mediaSource.get());
   } catch (...) {
     // Forward errors to event stream, as this is called asynchronously
-    this->OnError("WindowsAudioError", "Error setting bytes", nullptr);
+    this->OnError("WindowsAudioError", "Error setting bytes");
   }
 }
 
@@ -139,11 +139,17 @@ void AudioPlayer::OnMediaError(MF_MEDIA_ENGINE_ERR error, HRESULT hr) {
   }
 }
 
+void AudioPlayer::OnError(const std::string& code, const std::string& message) {
+  if (this->_eventHandler) {
+    this->_eventHandler->Error(code, message, nullptr);
+  }
+}
+
 void AudioPlayer::OnError(const std::string& code,
                           const std::string& message,
                           const flutter::EncodableValue& details) {
   if (this->_eventHandler) {
-    this->_eventHandler->Error(code, message, details);
+    this->_eventHandler->Error(code, message, &details);
   }
 }
 
@@ -166,16 +172,17 @@ void AudioPlayer::OnPrepared(bool isPrepared) {
 }
 
 void AudioPlayer::OnPlaybackEnded() {
-  SeekTo(0);
-  if (GetLooping()) {
-    Play();
-  }
   if (this->_eventHandler) {
     this->_eventHandler->Success(std::make_unique<flutter::EncodableValue>(
         flutter::EncodableMap({{flutter::EncodableValue("event"),
                                 flutter::EncodableValue("audio.onComplete")},
                                {flutter::EncodableValue("value"),
                                 flutter::EncodableValue(true)}})));
+  }
+  if (GetReleaseMode() == ReleaseMode::loop) {
+    Play();
+  } else {
+    Stop();
   }
 }
 
@@ -236,12 +243,13 @@ void AudioPlayer::Dispose() {
   _eventHandler = nullptr;
 }
 
-void AudioPlayer::SetLooping(bool isLooping) {
-  m_mediaEngineWrapper->SetLooping(isLooping);
+void AudioPlayer::SetReleaseMode(ReleaseMode releaseMode) {
+  m_mediaEngineWrapper->SetLooping(releaseMode == ReleaseMode::loop);
+  _releaseMode = releaseMode;
 }
 
-bool AudioPlayer::GetLooping() {
-  return m_mediaEngineWrapper->GetLooping();
+ReleaseMode AudioPlayer::GetReleaseMode() {
+  return _releaseMode;
 }
 
 void AudioPlayer::SetVolume(double volume) {
@@ -268,6 +276,15 @@ void AudioPlayer::Play() {
 
 void AudioPlayer::Pause() {
   m_mediaEngineWrapper->Pause();
+}
+
+void AudioPlayer::Stop() {
+  Pause();
+  if (GetReleaseMode() == ReleaseMode::release) {
+    ReleaseMediaSource();
+  } else {
+    SeekTo(0);
+  }
 }
 
 void AudioPlayer::Resume() {

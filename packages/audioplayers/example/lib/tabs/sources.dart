@@ -5,7 +5,7 @@ import 'package:audioplayers_example/components/btn.dart';
 import 'package:audioplayers_example/components/drop_down.dart';
 import 'package:audioplayers_example/components/tab_content.dart';
 import 'package:audioplayers_example/utils.dart';
-import 'package:file_picker/file_picker.dart';
+import 'package:file_selector/file_selector.dart' as file_selector;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -23,7 +23,7 @@ final mp3Url1 = '$host/files/audio/ambient_c_motion.mp3';
 final mp3Url2 = '$host/files/audio/nasa_on_a_mission.mp3';
 final m3u8StreamUrl = useLocalServer
     ? '$host/files/live_streams/nasa_power_of_the_rovers.m3u8'
-    : 'https://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/nonuk/sbr_low/ak/bbc_world_service.m3u8';
+    : 'https://raw.githubusercontent.com/bluefireteam/audioplayers/refs/heads/main/packages/audioplayers/example/server/public/files/live_streams/nasa_power_of_the_rovers.m3u8';
 final mpgaStreamUrl = useLocalServer
     ? '$host/stream/mpeg'
     : 'https://timesradio.wireless.radio/stream';
@@ -150,7 +150,7 @@ class _SourcesTabState extends State<SourcesTab>
         _createSourceTile(
           setSourceKey: const Key('setSource-url-remote-m3u8'),
           title: 'Remote URL M3U8',
-          subtitle: 'BBC stream',
+          subtitle: 'HLS Low-Latency Live Stream',
           source: UrlSource(m3u8StreamUrl),
         ),
         _createSourceTile(
@@ -383,11 +383,10 @@ class _SourceDialogState extends State<_SourceDialog> {
             Expanded(child: Text(path)),
             TextButton.icon(
               onPressed: () async {
-                final result = await FilePicker.platform.pickFiles();
-                final path = result?.files.single.path;
-                if (path != null) {
+                final file = await file_selector.openFile();
+                if (file != null) {
                   setState(() {
-                    this.path = path;
+                    path = file.path;
                   });
                 }
               },

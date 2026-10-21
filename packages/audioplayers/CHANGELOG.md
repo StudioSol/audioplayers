@@ -1,3 +1,65 @@
+## 6.8.1
+
+ - **FIX**: Avoid throwing a StateError in AudioPlayer._completePrepared ([#2010](https://github.com/bluefireteam/audioplayers/issues/2010)). ([d8a4f395](https://github.com/bluefireteam/audioplayers/commit/d8a4f395b5710b566da205dfd15f68bb5d93d7a3))
+ - **FIX**(windows): Compatibility with Visual Studio 18 (2026) ([#2011](https://github.com/bluefireteam/audioplayers/issues/2011)). ([ae5f4b96](https://github.com/bluefireteam/audioplayers/commit/ae5f4b965ef886f08b903a7a9386bc283db458c5))\
+   Pay attention to the new [Windows platform requirements](https://github.com/bluefireteam/audioplayers/blob/main/packages/audioplayers_windows/README.md#requirements).
+
+## 6.8.0
+
+ - **FIX**(windows): Update to C++23 & Windows Implementation Lib ([#2004](https://github.com/bluefireteam/audioplayers/issues/2004)). ([faa84312](https://github.com/bluefireteam/audioplayers/commit/faa843121c89625a5469dd517d39aae3a50cd1b8))
+ - **FEAT**(android): Compatibility with Built-In Kotlin ([#1991](https://github.com/bluefireteam/audioplayers/issues/1991)). ([687218b9](https://github.com/bluefireteam/audioplayers/commit/687218b96682a7bcadd9490572db692dbc9a2f07))
+
+## 6.7.1
+
+ - **FIX**(web): Exclude web from rechecking cache ([#1993](https://github.com/bluefireteam/audioplayers/issues/1993)). ([7c8da3d5](https://github.com/bluefireteam/audioplayers/commit/7c8da3d595ef9d6adbc0e1b8a753c7ba548451d6))
+
+## 6.7.0
+
+ - **FIX**: Always check if file exists when playing from cache ([#1980](https://github.com/bluefireteam/audioplayers/issues/1980)). ([a1a5f4e6](https://github.com/bluefireteam/audioplayers/commit/a1a5f4e65c8e58f50330333d2e4f43faeca4ffe9))
+ - **FEAT**: Get duration from AudioPool ([#1954](https://github.com/bluefireteam/audioplayers/issues/1954)). ([c042e20e](https://github.com/bluefireteam/audioplayers/commit/c042e20e70df090d2c452c8a3cc32964498de7eb))
+
+## 6.6.0
+
+ - **PERF**: Option to set PlayerMode for AudioPools ([#1963](https://github.com/bluefireteam/audioplayers/issues/1963)). ([a97caa12](https://github.com/bluefireteam/audioplayers/commit/a97caa12a8fbdbc75ea246d8683c57f406266369))
+ - **FIX**(android): FileNotFoundException after application cache got cleared ([#1922](https://github.com/bluefireteam/audioplayers/issues/1922)). ([0e3bca2b](https://github.com/bluefireteam/audioplayers/commit/0e3bca2ba330268b2839130cf27cd34bea3835ef))
+ - **FEAT**: Async swift code, align release functionality, align Android initialization error ([#1964](https://github.com/bluefireteam/audioplayers/issues/1964)). ([65c8f373](https://github.com/bluefireteam/audioplayers/commit/65c8f37314e7e023814bb77c9474c8a076f288cb))
+
+## 6.5.1
+
+ - **FIX**: Initialize audioplayer instances sequentially ([#1941](https://github.com/bluefireteam/audioplayers/issues/1941)). ([663fff2c](https://github.com/bluefireteam/audioplayers/commit/663fff2cb8482c81cb525c9d97bfb7f5d02dfdee))
+
+## 6.5.0
+
+ - **FIX**: Migrate to Melos v7 and Pub Workspaces ([#1929](https://github.com/bluefireteam/audioplayers/issues/1929)). ([9d0bfe0b](https://github.com/bluefireteam/audioplayers/commit/9d0bfe0be5cba0ce4fb3a75912b41117a8996bfe))
+ - **FEAT**: Customizable preparation and seeking timeout ([#1921](https://github.com/bluefireteam/audioplayers/issues/1921)). ([d5a63f8b](https://github.com/bluefireteam/audioplayers/commit/d5a63f8b206554f6a6719653c5ce9b92b8d096b9))
+ - **FEAT**: Support for Swift Package Manager ([#1908](https://github.com/bluefireteam/audioplayers/issues/1908)). ([e8f86e7b](https://github.com/bluefireteam/audioplayers/commit/e8f86e7bf80ddb8b0955d35c53f08cbf5f2d141b))
+
+## 6.4.0
+
+ - **FEAT**: Dispose players on Hot restart (closes [#1120](https://github.com/bluefireteam/audioplayers/issues/1120)) ([#1905](https://github.com/bluefireteam/audioplayers/issues/1905)). ([92bcb19e](https://github.com/bluefireteam/audioplayers/commit/92bcb19e10c462cb749e1209c5e066efc5581728))
+
+## 6.3.0
+
+ - **FEAT**(android): ExoPlayer for Android ([#1691](https://github.com/bluefireteam/audioplayers/issues/1691)). ([a91c5b18](https://github.com/bluefireteam/audioplayers/commit/a91c5b185054986a2390d41593b5ee502ef96bdd))\
+   You can enable the non-endorsed plugin implementation based on ExoPlayer (Media3) by calling: `flutter pub add audioplayers_android_exo` in your app package folder.
+   For more, see: https://github.com/bluefireteam/audioplayers/blob/main/feature_parity_table.md#media3-exoplayer
+ - **FEAT**: Raise to Flutter 3.29.0 ([#1891](https://github.com/bluefireteam/audioplayers/issues/1891)). ([26bd6d22](https://github.com/bluefireteam/audioplayers/commit/26bd6d228deacf7cb3454f2d1b972585cd8bb6ea))
+ - **DOCS**: Fix status badge ([#1899](https://github.com/bluefireteam/audioplayers/issues/1899)). ([a0c6c4fa](https://github.com/bluefireteam/audioplayers/commit/a0c6c4fabff19e943dced1070c1be3541668dce9))
+
+## 6.2.0
+
+ - **FIX**: No-op on single player setAudioContext in desktop platforms ([#1888](https://github.com/bluefireteam/audioplayers/issues/1888)). ([50d7a8b8](https://github.com/bluefireteam/audioplayers/commit/50d7a8b89f47e3ef29e98cf2b74a582f78783d5e))
+ - **FEAT**: Support setting AudioContext in AudioPool ([#1890](https://github.com/bluefireteam/audioplayers/issues/1890)). ([2968c88b](https://github.com/bluefireteam/audioplayers/commit/2968c88b4e1492a29d4cd0e5f7735f159f995c1a))
+ - **FEAT**: ReleaseMode.release for ios, macos, windows, web, linux ([#1790](https://github.com/bluefireteam/audioplayers/issues/1790)). ([4ffc4029](https://github.com/bluefireteam/audioplayers/commit/4ffc4029d846d7c391c457b829c372c1763b7b50))
+
+## 6.1.2
+
+ - Update a dependency to the latest release.
+
+## 6.1.1
+
+ - Update a dependency to the latest release.
+
 ## 6.1.0
 
  - **FEAT**: Upgrade to Flutter v3.22.x ([#1803](https://github.com/bluefireteam/audioplayers/issues/1803)). ([4d669e72](https://github.com/bluefireteam/audioplayers/commit/4d669e723dc5c2399073301ba9333f99bc623669))

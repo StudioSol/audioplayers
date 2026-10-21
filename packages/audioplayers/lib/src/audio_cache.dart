@@ -44,7 +44,7 @@ class AudioCache {
   /// For example, Flame uses the prefix 'assets/audio/'
   /// (you must include the final slash!).
   /// The default prefix (if not provided) is 'assets/'
-  /// Your files will be found at <prefix><fileName> (so the trailing slash is
+  /// Your files will be found at `<prefix><fileName>` (so the trailing slash is
   /// crucial).
   String prefix;
 
@@ -126,7 +126,20 @@ class AudioCache {
   ///
   /// Returns a [Uri] to access that file.
   Future<Uri> load(String fileName) async {
-    if (!loadedFiles.containsKey(fileName)) {
+    var needsFetch = !loadedFiles.containsKey(fileName);
+
+    // Verify that the cached file still exists. It can be removed
+    // by the system when the storage is almost full
+    // Android: https://developer.android.com/training/data-storage/app-specific#internal-remove-cache
+    // iOS: https://developer.apple.com/documentation/foundation/using-the-file-system-effectively#Store-short-lived-files
+    // Web: Uses a data uri, the content is not present on the file system.
+    if (!kIsWeb &&
+        !needsFetch &&
+        !fileSystem.file(loadedFiles[fileName]).existsSync()) {
+      needsFetch = true;
+    }
+
+    if (needsFetch) {
       loadedFiles[fileName] = await fetchToMemory(fileName);
     }
     return loadedFiles[fileName]!;

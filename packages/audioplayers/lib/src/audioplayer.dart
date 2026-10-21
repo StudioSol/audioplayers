@@ -19,6 +19,9 @@ const _uuid = Uuid();
 /// hooks for handlers and callbacks.
 class AudioPlayer {
   static final global = GlobalAudioScope();
+  static Duration preparationTimeout = const Duration(seconds: 30);
+  static Duration seekingTimeout = const Duration(seconds: 30);
+
   final _platform = AudioplayersPlatformInterface.instance;
 
   /// This is the [AudioCache] instance used by this player.
@@ -172,6 +175,7 @@ class AudioPlayer {
 
   Future<void> _create() async {
     try {
+      await global.ensureInitialized();
       await _platform.create(playerId);
       // Assign the event stream, now that the platform registered this player.
       _eventStreamSubscription = _platform.getEventStream(playerId).listen(
@@ -290,7 +294,7 @@ class AudioPlayer {
     await creatingCompleter.future;
 
     final futureSeekComplete =
-        onSeekComplete.first.timeout(const Duration(seconds: 30));
+        onSeekComplete.first.timeout(AudioPlayer.seekingTimeout);
     final futureSeek = _platform.seek(playerId, position);
     // Wait simultaneously to ensure all errors are propagated through the same
     // future.
@@ -354,15 +358,18 @@ class AudioPlayer {
   Future<void> _completePrepared(Future<void> Function() setSource) async {
     await creatingCompleter.future;
 
-    final futurePrepared = _onPrepared
-        .firstWhere((isPrepared) => isPrepared)
-        .timeout(const Duration(seconds: 30));
+    final preparedFuture = _onPrepared
+        .firstWhere(
+          (isPrepared) => isPrepared,
+          orElse: () => throw Exception('Stream closed before it got prepared'),
+        )
+        .timeout(AudioPlayer.preparationTimeout);
     // Need to await the setting the source to propagate immediate errors.
-    final futureSetSource = setSource();
+    final setSourceFuture = setSource();
 
     // Wait simultaneously to ensure all errors are propagated through the same
     // future.
-    await Future.wait([futureSetSource, futurePrepared]);
+    await Future.wait([setSourceFuture, preparedFuture]);
 
     // Share position once after finished loading
     await _positionUpdater?.update();
